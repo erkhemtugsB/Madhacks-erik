@@ -17,6 +17,16 @@ const remoteVideos = document.getElementById("remoteVideos");
 const leaveBtn = document.getElementById("leaveBtn");
 const statusSpan = document.getElementById("status");
 
+// status helper: update colored dot and tooltip
+function setStatus(state) {
+  if (!statusSpan) return;
+  const dot = statusSpan.querySelector('.status-dot');
+  if (!dot) return;
+  dot.classList.remove('connected','connecting','disconnected');
+  if (state) dot.classList.add(state);
+  statusSpan.title = state ? (state.charAt(0).toUpperCase() + state.slice(1)) : '';
+}
+
 function leave() {
   if (!joined && (!ws || ws.readyState !== WebSocket.OPEN)) return;
 
@@ -54,7 +64,7 @@ function leave() {
   joinBtn.disabled = false;
   joinBtn.textContent = "Join Room";
   leaveBtn.disabled = true;
-  statusSpan.textContent = "Disconnected";
+  setStatus('disconnected');
 }
 
 // Wire leave button
@@ -190,7 +200,7 @@ joinBtn.onclick = async () => {
     return;
   }
 
-  statusSpan.textContent = "Connecting...";
+  setStatus('connecting');
 
   // Choose WebSocket protocol based on page protocol so WSS is used over HTTPS.
   const wsProto = location.protocol === "https:" ? "wss" : "ws";
@@ -198,7 +208,7 @@ joinBtn.onclick = async () => {
 
   ws.onopen = () => {
     ws.send(JSON.stringify({ type: "join", room }));
-    statusSpan.textContent = "Connected";
+    setStatus('connected');
     leaveBtn.disabled = false;
   };
 
@@ -291,7 +301,7 @@ joinBtn.onclick = async () => {
     joinBtn.disabled = false;
     joinBtn.textContent = "Join Room";
     leaveBtn.disabled = true;
-    statusSpan.textContent = "Disconnected";
+    setStatus('disconnected');
   };
 
   ws.onerror = (err) => {

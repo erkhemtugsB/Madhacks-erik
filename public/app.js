@@ -2,6 +2,7 @@ let localStream;
 let ws;
 let peers = [];
 let room;
+let joined = false; // prevent multiple joins from repeated clicks
 
 // UI elements
 const joinBtn = document.getElementById("joinBtn");
@@ -9,6 +10,7 @@ const localVideo = document.getElementById("localVideo");
 const remoteVideos = document.getElementById("remoteVideos");
 
 async function initLocalStream() {
+  if (localStream) return; // already initialized
   localStream = await navigator.mediaDevices.getUserMedia({
     video: true,
     audio: true,
@@ -66,9 +68,23 @@ async function createPeer(ws, isInitiator) {
 }
 
 joinBtn.onclick = async () => {
+  if (joined) return;
+  joined = true;
+  joinBtn.disabled = true;
+  joinBtn.textContent = "Joined";
+
   room = document.getElementById("roomInput").value;
 
-  await initLocalStream();
+  try {
+    await initLocalStream();
+  } catch (err) {
+    // If getUserMedia fails, allow retry
+    console.error("getUserMedia failed:", err);
+    joined = false;
+    joinBtn.disabled = false;
+    joinBtn.textContent = "Join Room";
+    return;
+  }
 
   // Choose WebSocket protocol based on page protocol so WSS is used over HTTPS.
   const wsProto = location.protocol === "https:" ? "wss" : "ws";
@@ -106,5 +122,16 @@ joinBtn.onclick = async () => {
       const candidate = new RTCIceCandidate(data.payload);
       peers.forEach((pc) => pc.addIceCandidate(candidate));
     }
+  };
+
+  ws.onclose = () => {
+    // allow re-joining if connection closes
+    joined = false;
+    joinBtn.disabled = false;
+    joinBtn.textContent = "Join Room";
+  };
+
+  ws.onerror = (err) => {
+    console.error("WebSocket error:", err);
   };
 };

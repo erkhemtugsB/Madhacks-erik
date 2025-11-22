@@ -39,10 +39,23 @@ async function createPeer(ws, isInitiator) {
 
   // Add remote video on track event
   pc.ontrack = (event) => {
+    const stream = event.streams[0];
+    if (!stream) return;
+
+    // Avoid adding duplicate video elements for the same MediaStream
+    const existing = Array.from(remoteVideos.children).find(
+      (el) => el.dataset && el.dataset.streamId === stream.id
+    );
+    if (existing) {
+      existing.srcObject = stream;
+      return;
+    }
+
     const vid = document.createElement("video");
     vid.autoplay = true;
     vid.playsInline = true;
-    vid.srcObject = event.streams[0];
+    vid.srcObject = stream;
+    vid.dataset.streamId = stream.id;
     remoteVideos.appendChild(vid);
   };
 

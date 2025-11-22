@@ -17,7 +17,11 @@ async function initLocalStream() {
 }
 
 async function createPeer(ws, isInitiator) {
-  const pc = new RTCPeerConnection();
+  const pc = new RTCPeerConnection({
+    iceServers: [
+      { urls: "stun:stun.l.google.com:19302" },
+    ],
+  });
 
   // Send ICE candidates to others
   pc.onicecandidate = (e) => {
@@ -66,7 +70,9 @@ joinBtn.onclick = async () => {
 
   await initLocalStream();
 
-  ws = new WebSocket(`ws://${location.hostname}:3000`);
+  // Choose WebSocket protocol based on page protocol so WSS is used over HTTPS.
+  const wsProto = location.protocol === "https:" ? "wss" : "ws";
+  ws = new WebSocket(`${wsProto}://${location.host}`);
 
   ws.onopen = () => {
     ws.send(JSON.stringify({ type: "join", room }));

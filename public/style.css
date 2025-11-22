@@ -1,0 +1,10 @@
+body {
+  font-family: sans-serif;
+  padding: 20px;
+}
+
+video {
+  width: 280px;
+  margin: 10px;
+  background: #000;
+}

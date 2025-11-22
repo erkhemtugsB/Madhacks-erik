@@ -22,6 +22,25 @@ video {
   margin-right: 8px;
 }
 
+/* Header room controls styling */
+.topbar { padding:8px 12px; }
+.topbar .room-controls { display:flex; align-items:center; gap:10px; }
+.room-controls input {
+  padding:8px 10px; border-radius:8px; border:1px solid #e0e0e0; min-width:180px; background:#fff; color:#222;
+  box-shadow: inset 0 1px 0 rgba(0,0,0,0.02);
+}
+.room-controls input::placeholder { color:#999; }
+.room-controls input:focus { outline: none; border-color:#bcd; box-shadow:0 0 0 3px rgba(33,150,243,0.08); }
+.status { margin-left:8px; color:#666; font-size:13px; }
+
+@media (max-width:700px) {
+  .topbar { flex-direction:column; align-items:flex-start; gap:8px; }
+  .room-controls input { min-width:120px; }
+}
+
+/* Logo */
+.logo { height:100px; display:block; margin-right:12px; }
+
 /* Button styles */
 .btn { display:inline-block; padding:8px 12px; border-radius:6px; border:1px solid transparent; cursor:pointer; font-weight:600; transition: background .12s, transform .08s, opacity .12s; }
 .btn:not(:disabled):hover { transform: translateY(-1px); }

@@ -43,6 +43,16 @@ const wss = new WebSocket.Server({ server });
 // serve static files (frontend)
 app.use(express.static(path.join(__dirname, "public")));
 
+// Serve repo-root logo.png at `/logo.png` so header can load it from the repo root
+app.get('/logo.png', (req, res) => {
+  const logoPath = path.join(__dirname, '..', 'logo.png');
+  if (fs.existsSync(logoPath)) {
+    res.sendFile(logoPath);
+  } else {
+    res.status(404).end();
+  }
+});
+
 // upload endpoint: accepts a single file field named "file"
 app.post("/upload", upload.single("file"), (req, res) => {
   if (!req.file) return res.status(400).json({ success: false, error: "no file" });

@@ -36,20 +36,27 @@ app.use(express.static(path.join(__dirname, "public")));
 let rooms = {}; // { roomId: Set<ws> }
 
 wss.on("connection", (ws) => {
+  // assign a short id for this connection
+  ws.id = Math.random().toString(36).substr(2, 9);
   ws.on("message", (raw) => {
     const msg = JSON.parse(raw);
-    const { type, room, payload } = msg;
+    const { type, room, payload, to } = msg;
 
     // Join room
     if (type === "join") {
       ws.room = room;
       rooms[room] = rooms[room] || new Set();
+      // collect existing peer ids before adding
+      const existingPeerIds = Array.from(rooms[room]).map((p) => p.id);
       rooms[room].add(ws);
 
-      // Tell others a new peer joined
+      // Tell joining client its id and list of existing peers
+      ws.send(JSON.stringify({ type: "id", id: ws.id, peers: existingPeerIds }));
+
+      // Notify existing peers that a new peer joined (provide the new peer's id)
       rooms[room].forEach((peer) => {
         if (peer !== ws) {
-          peer.send(JSON.stringify({ type: "new-peer" }));
+          peer.send(JSON.stringify({ type: "new-peer", id: ws.id }));
         }
       });
       return;
@@ -57,17 +64,30 @@ wss.on("connection", (ws) => {
 
     // Relay offers/answers/candidates to room peers
     if (ws.room && rooms[ws.room]) {
-      rooms[ws.room].forEach((peer) => {
-        if (peer !== ws) {
-          peer.send(JSON.stringify({ type, payload }));
+      if (to) {
+        // route to a specific peer if requested
+        const target = Array.from(rooms[ws.room]).find((p) => p.id === to);
+        if (target && target !== ws) {
+          target.send(JSON.stringify({ type, payload, from: ws.id }));
         }
-      });
+      } else {
+        rooms[ws.room].forEach((peer) => {
+          if (peer !== ws) {
+            // include sender id so clients can route messages to the right peer
+            peer.send(JSON.stringify({ type, payload, from: ws.id }));
+          }
+        });
+      }
     }
   });
 
   ws.on("close", () => {
     if (ws.room && rooms[ws.room]) {
       rooms[ws.room].delete(ws);
+      // notify remaining peers that this peer left
+      rooms[ws.room].forEach((peer) => {
+        peer.send(JSON.stringify({ type: "peer-left", id: ws.id }));
+      });
     }
   });
 });

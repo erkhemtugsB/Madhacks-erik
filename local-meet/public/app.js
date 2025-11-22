@@ -100,6 +100,60 @@ if (submissionForm) {
   });
 }
 
+// Helper to upload a single File object using the same /upload endpoint
+async function uploadSingleFile(file, showResult = true) {
+  const fd = new FormData();
+  fd.append('file', file);
+  try {
+    const res = await fetch('/upload', { method: 'POST', body: fd });
+    const json = await res.json();
+    if (json && json.success) {
+      if (showResult && uploadResult) uploadResult.textContent = `Uploaded ${json.originalname || file.name}`;
+      try { if (typeof fetchFiles === 'function') fetchFiles(); } catch (e) {}
+      return json;
+    } else {
+      if (showResult && uploadResult) uploadResult.textContent = `Upload failed: ${json && json.error}`;
+      return null;
+    }
+  } catch (err) {
+    if (showResult && uploadResult) uploadResult.textContent = `Upload error: ${err.message}`;
+    return null;
+  }
+}
+
+// Dropbox handling for the uploads panel
+const dropZone = document.getElementById('dropZone');
+const dropInput = document.getElementById('dropInput');
+if (dropZone) {
+  dropZone.addEventListener('click', (e) => { if (dropInput) dropInput.click(); });
+  dropZone.addEventListener('dragenter', (e) => { e.preventDefault(); dropZone.classList.add('dragover'); });
+  dropZone.addEventListener('dragover', (e) => { e.preventDefault(); dropZone.classList.add('dragover'); });
+  dropZone.addEventListener('dragleave', (e) => { dropZone.classList.remove('dragover'); });
+  dropZone.addEventListener('drop', async (e) => {
+    e.preventDefault();
+    dropZone.classList.remove('dragover');
+    const dt = e.dataTransfer;
+    if (!dt) return;
+    const files = Array.from(dt.files || []);
+    if (files.length === 0) return;
+    if (uploadResult) uploadResult.textContent = 'Uploading...';
+    for (const f of files) {
+      await uploadSingleFile(f);
+    }
+  });
+}
+if (dropInput) {
+  dropInput.addEventListener('change', async (e) => {
+    const files = Array.from(dropInput.files || []);
+    if (files.length === 0) return;
+    if (uploadResult) uploadResult.textContent = 'Uploading...';
+    for (const f of files) {
+      await uploadSingleFile(f);
+    }
+    dropInput.value = '';
+  });
+}
+
 async function initLocalStream() {
   if (localStream) return; // already initialized
   localStream = await navigator.mediaDevices.getUserMedia({

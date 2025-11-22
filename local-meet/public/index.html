@@ -41,6 +41,14 @@
 
       <div class="panel" id="uploads">
         <h3>Uploaded Files <span id="fileCount" class="muted">(0)</span></h3>
+        <div id="dropZone" class="dropbox">
+          <input id="dropInput" type="file" style="display:none" />
+          <div class="dropbox-content">
+            <div class="drop-icon">📁</div>
+            <div class="drop-title">Drag & drop files here</div>
+            <div class="drop-sub">or click to select files</div>
+          </div>
+        </div>
         <button id="refreshFiles" class="small">Refresh</button>
         <ul id="fileList" class="file-list"></ul>
       </div>

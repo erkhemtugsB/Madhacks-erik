@@ -200,6 +200,15 @@ video {
 .chat-controls { display:flex; gap:8px; margin-top:8px; }
 .chat-controls input { flex:1; padding:6px; }
 
+/* Upload dropbox */
+.dropbox { border:2px dashed #e0e0e0; border-radius:10px; padding:18px; display:flex; align-items:center; justify-content:center; cursor:pointer; background:linear-gradient(180deg, #fff, #fbfbfb); transition: border-color .12s, background .12s, box-shadow .12s; }
+.dropbox.dragover { border-color: #2ecc71; background: linear-gradient(180deg,#f8fff7,#f2fff2); box-shadow:0 6px 18px rgba(46,204,113,0.08); }
+.dropbox-content { text-align:center; color:#666; }
+.drop-icon { font-size:28px; margin-bottom:6px; }
+.drop-title { font-weight:700; color:#333; }
+.drop-sub { font-size:13px; color:#888; }
+.file-list { margin-top:10px; }
+
 @media (max-width:900px) {
   .layout {
     grid-template-columns: 1fr;

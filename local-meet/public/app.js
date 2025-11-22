@@ -56,6 +56,36 @@ function leave() {
 // Wire leave button
 if (leaveBtn) leaveBtn.onclick = leave;
 
+// Submission form handling (AJAX file upload)
+const submissionForm = document.getElementById("submissionForm");
+const fileInput = document.getElementById("fileInput");
+const uploadResult = document.getElementById("uploadResult");
+if (submissionForm) {
+  submissionForm.addEventListener("submit", async (e) => {
+    e.preventDefault();
+    uploadResult.textContent = "Uploading...";
+    const file = fileInput.files[0];
+    if (!file) {
+      uploadResult.textContent = "Select a file first.";
+      return;
+    }
+    const fd = new FormData();
+    fd.append("file", file);
+
+    try {
+      const res = await fetch("/upload", { method: "POST", body: fd });
+      const json = await res.json();
+      if (json.success) {
+        uploadResult.textContent = `Uploaded as ${json.filename} (original: ${json.originalname})`;
+      } else {
+        uploadResult.textContent = `Upload failed: ${json.error || 'unknown'}`;
+      }
+    } catch (err) {
+      uploadResult.textContent = `Upload error: ${err.message}`;
+    }
+  });
+}
+
 async function initLocalStream() {
   if (localStream) return; // already initialized
   localStream = await navigator.mediaDevices.getUserMedia({

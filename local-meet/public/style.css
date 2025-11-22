@@ -16,36 +16,141 @@ video {
   align-items: center;
   margin-bottom: 12px;
 }
-.room-controls input { padding:6px; margin-right:8px; }
+
+.room-controls input {
+  padding: 6px;
+  margin-right: 8px;
+}
 
 .layout {
   display: grid;
   grid-template-columns: 1fr 320px;
   gap: 18px;
 }
-.video-column { display:flex; flex-direction:column; gap:14px; }
-.video-card { background:#f8f8f9; padding:12px; border-radius:8px; box-shadow:0 1px 3px rgba(0,0,0,0.06);} 
-.remote-videos { display:flex; flex-wrap:wrap; gap:12px; justify-content:flex-start; align-items:flex-start; }
+
+.video-column {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.video-card {
+  background: #f8f8f9;
+  padding: 12px;
+  border-radius: 8px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
+}
+
+.remote-videos {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  justify-content: flex-start;
+  align-items: flex-start;
+}
+
 /* Make the first remote video the large foreground like the earlier local big view */
-.remote-videos video:first-child { width:100%; max-width:920px; height:auto; max-height:560px; border-radius:8px; box-shadow:0 6px 30px rgba(0,0,0,0.25); }
-.remote-videos video:not(:first-child) { width:320px; height:200px; border-radius:6px; background:#000; }
-.video-card video { border-radius:6px; }
-.video-card.local-card video { width:320px; height:200px; max-height:240px; margin:0 auto; }
+.remote-videos video:first-child {
+  width: 100%;
+  max-width: 920px;
+  height: auto;
+  max-height: 560px;
+  border-radius: 8px;
+  box-shadow: 0 6px 30px rgba(0, 0, 0, 0.25);
+}
 
-.side-column { display:flex; flex-direction:column; gap:12px; }
-.panel { background:#fff; border:1px solid #eee; padding:12px; border-radius:8px; }
-.upload-form { display:flex; gap:8px; align-items:center; }
-.upload-form input[type=file] { flex:1; }
-.upload-form button { padding:8px 12px; }
+.remote-videos video:not(:first-child) {
+  width: 320px;
+  height: 200px;
+  border-radius: 6px;
+  background: #000;
+}
 
-.file-list { list-style:none; padding:0; margin:0; display:flex; flex-direction:column; gap:8px; }
-.file-list li { display:flex; justify-content:space-between; align-items:center; padding:8px; border-radius:6px; background:#fafafa; border:1px solid #f0f0f0; }
-.file-list a { color:#0645ad; text-decoration:none; }
-.file-list .meta { color:#666; font-size:12px; margin-left:8px; }
-.small { padding:6px 8px; font-size:13px; }
-.muted { color:#666; font-size:13px; margin-top:8px; }
+.video-card video {
+  border-radius: 6px;
+}
 
-@media (max-width:900px){
-  .layout { grid-template-columns: 1fr; }
-  .remote-videos video { width:160px; height:110px; }
+.video-card.local-card video {
+  width: 320px;
+  height: 200px;
+  max-height: 240px;
+  margin: 0 auto;
+}
+
+.side-column {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.panel {
+  background: #fff;
+  border: 1px solid #eee;
+  padding: 12px;
+  border-radius: 8px;
+}
+
+.upload-form {
+  gap: 8px;
+  align-items: center;
+}
+
+.upload-form input[type=file] {
+  flex: 1;
+}
+
+.upload-form button {
+  padding: 8px 12px;
+}
+
+.file-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.file-list li {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px;
+  border-radius: 6px;
+  background: #fafafa;
+  border: 1px solid #f0f0f0;
+}
+
+.file-list a {
+  color: #0645ad;
+  text-decoration: none;
+}
+
+.file-list .meta {
+  color: #666;
+  font-size: 12px;
+  margin-left: 8px;
+}
+
+.small {
+  padding: 6px 8px;
+  font-size: 13px;
+}
+
+.muted {
+  color: #666;
+  font-size: 13px;
+  margin-top: 8px;
+}
+
+@media (max-width:900px) {
+  .layout {
+    grid-template-columns: 1fr;
+  }
+
+  .remote-videos video {
+    width: 160px;
+    height: 110px;
+  }
 }

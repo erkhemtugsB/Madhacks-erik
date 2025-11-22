@@ -1,10 +1,33 @@
 const express = require("express");
 const http = require("http");
+const https = require("https");
+const fs = require("fs");
 const WebSocket = require("ws");
 const path = require("path");
 
 const app = express();
-const server = http.createServer(app);
+
+// Prefer HTTPS if cert files exist (created in `cert/` by user).
+let server;
+let usingHttps = false;
+const keyPath = path.join(__dirname, "cert", "server.key");
+const certPath = path.join(__dirname, "cert", "server.cert");
+if (fs.existsSync(keyPath) && fs.existsSync(certPath)) {
+  try {
+    const options = {
+      key: fs.readFileSync(keyPath),
+      cert: fs.readFileSync(certPath),
+    };
+    server = https.createServer(options, app);
+    usingHttps = true;
+  } catch (err) {
+    console.error("Failed to create HTTPS server, falling back to HTTP:", err);
+    server = http.createServer(app);
+  }
+} else {
+  server = http.createServer(app);
+}
+
 const wss = new WebSocket.Server({ server });
 
 // serve static files (frontend)
@@ -49,6 +72,22 @@ wss.on("connection", (ws) => {
   });
 });
 
-server.listen(3000, () => {
-  console.log("Local video chat server running on http://0.0.0.0:3000");
-});
+if (usingHttps) {
+  server.listen(3000, () => {
+    console.log("Local video chat server running on https://0.0.0.0:3000");
+    console.log("Note: this uses a self-signed certificate — your browser may warn you.");
+  });
+  // Optional: also start a small HTTP redirect server so visits to http://IP:3001 can be redirected
+  const redirect = http.createServer((req, res) => {
+    const host = req.headers.host ? req.headers.host.split(":")[0] : "localhost";
+    res.writeHead(301, { Location: `https://${host}:3000${req.url}` });
+    res.end();
+  });
+  redirect.listen(3001, () => {
+    console.log("HTTP redirect server running on http://0.0.0.0:3001 (redirects to HTTPS :3000)");
+  });
+} else {
+  server.listen(3000, () => {
+    console.log("Local video chat server running on http://0.0.0.0:3000");
+  });
+}

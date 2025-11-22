@@ -22,6 +22,26 @@ video {
   margin-right: 8px;
 }
 
+/* Button styles */
+.btn { display:inline-block; padding:8px 12px; border-radius:6px; border:1px solid transparent; cursor:pointer; font-weight:600; transition: background .12s, transform .08s, opacity .12s; }
+.btn:not(:disabled):hover { transform: translateY(-1px); }
+.btn:active { transform:translateY(1px); }
+.btn-green { background: #2ecc71; color: #fff; border-color: #27ae60; }
+.btn-green:hover { background: #26c66a; }
+.btn-small { padding:6px 8px; font-size:13px; }
+
+/* Red variant for destructive/leaving actions */
+.btn-red { background: #e74c3c; color: #fff; border-color: #c0392b; }
+.btn-red:hover { background: #e53935; }
+
+/* Muted appearance when a button is not active/disabled */
+.btn:disabled, .btn[disabled] {
+  opacity: 0.6;
+  cursor: not-allowed;
+  filter: grayscale(60%);
+  box-shadow: none;
+}
+
 .layout {
   display: grid;
   grid-template-columns: 1fr 320px;

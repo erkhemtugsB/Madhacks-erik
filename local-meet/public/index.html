@@ -4,29 +4,48 @@
   <title>Local Zoom Clone</title>
   <link rel="stylesheet" href="style.css" />
 </head>
+</body>
 <body>
-  <h2>Local Zoom Clone (LAN Only)</h2>
+  <header class="topbar">
+    <h2>Local Zoom Clone (LAN Only)</h2>
+    <div class="room-controls">
+      <input id="roomInput" placeholder="Room name" value="testroom" />
+      <button id="joinBtn">Join Room</button>
+      <button id="leaveBtn" disabled>Leave Room</button>
+      <span id="status" class="status">Disconnected</span>
+    </div>
+  </header>
 
-  <input id="roomInput" placeholder="Room name" value="testroom" />
-  <button id="joinBtn">Join Room</button>
-  <button id="leaveBtn" disabled>Leave Room</button>
-  <span id="status" style="margin-left:12px;color:#666;">Disconnected</span>
+  <main class="layout">
+    <section class="video-column">
+      <div class="video-card">
+        <h3>Remote Videos</h3>
+        <div id="remoteVideos" class="remote-videos"></div>
+      </div>
 
-  <h3>Local Video</h3>
-  <video id="localVideo" autoplay muted playsinline></video>
+      <div class="video-card local-card">
+        <h3>Local Video</h3>
+        <video id="localVideo" autoplay muted playsinline></video>
+      </div>
+    </section>
 
-  <h3>Remote Videos</h3>
-  <div id="remoteVideos"></div>
+    <aside class="side-column">
+      <div class="panel" id="uploader">
+        <h3>Upload Submission</h3>
+        <form id="submissionForm" class="upload-form">
+          <input type="file" id="fileInput" name="file" />
+          <button type="submit">Upload</button>
+        </form>
+        <div id="uploadResult" class="muted"></div>
+      </div>
 
-  <div id="submission"></div>
-  <div id="uploader">
-    <h3>Submission</h3>
-    <form id="submissionForm">
-      <input type="file" id="fileInput" name="file" />
-      <button type="submit">Upload</button>
-    </form>
-    <div id="uploadResult" style="margin-top:8px;color:#333"></div>
-  </div>
+      <div class="panel" id="uploads">
+        <h3>Uploaded Files <span id="fileCount" class="muted">(0)</span></h3>
+        <button id="refreshFiles" class="small">Refresh</button>
+        <ul id="fileList" class="file-list"></ul>
+      </div>
+    </aside>
+  </main>
 
   <script src="app.js"></script>
 </body>

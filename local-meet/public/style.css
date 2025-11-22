@@ -144,6 +144,16 @@ video {
   margin-top: 8px;
 }
 
+/* Chat styles */
+.chat-list { max-height:240px; overflow:auto; display:flex; flex-direction:column; gap:6px; padding:6px 0; }
+.chat-item { padding:8px; border-radius:6px; background:#fafafa; border:1px solid #eee; }
+.chat-item.interim { opacity:0.7; }
+.chat-item.final { background:#fff; }
+.chat-who { font-weight:600; font-size:13px; margin-bottom:4px; }
+.chat-text { white-space:pre-wrap; }
+.chat-controls { display:flex; gap:8px; margin-top:8px; }
+.chat-controls input { flex:1; padding:6px; }
+
 @media (max-width:900px) {
   .layout {
     grid-template-columns: 1fr;

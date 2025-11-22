@@ -51,6 +51,7 @@ app.post("/upload", upload.single("file"), (req, res) => {
 });
 
 let rooms = {}; // { roomId: Set<ws> }
+let messages = {}; // { roomId: [ { type, text, from, timestamp, final } ] }
 
 wss.on("connection", (ws) => {
   // assign a short id for this connection
@@ -58,6 +59,25 @@ wss.on("connection", (ws) => {
   ws.on("message", (raw) => {
     const msg = JSON.parse(raw);
     const { type, room, payload, to } = msg;
+
+    // persist chat/transcript messages so clients can fetch conversation history
+    if ((type === 'chat' || type === 'transcript') && ws.room) {
+      messages[ws.room] = messages[ws.room] || [];
+      try {
+        const entry = {
+          type,
+          text: payload && payload.text ? payload.text : (typeof payload === 'string' ? payload : ''),
+          from: ws.id,
+          timestamp: Date.now(),
+          final: payload && !!payload.final,
+        };
+        messages[ws.room].push(entry);
+        // cap history to last 100 messages per room
+        if (messages[ws.room].length > 100) messages[ws.room].shift();
+      } catch (e) {
+        console.warn('Failed to persist message', e);
+      }
+    }
 
     // Join room
     if (type === "join") {
@@ -107,6 +127,13 @@ wss.on("connection", (ws) => {
       });
     }
   });
+});
+
+// return conversation history for a room
+app.get('/messages', (req, res) => {
+  const roomQ = req.query.room;
+  if (!roomQ) return res.status(400).json({ success: false, error: 'room required' });
+  res.json({ success: true, messages: messages[roomQ] || [] });
 });
 
 if (usingHttps) {

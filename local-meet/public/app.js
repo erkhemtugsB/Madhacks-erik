@@ -5,6 +5,10 @@ let room;
 let joined = false; // prevent multiple joins from repeated clicks
 let myId = null;
 let pendingCandidates = {}; // map: remoteId -> [candidateInit]
+// dedupe recent final messages to avoid duplicates
+const recentMsgSet = new Set();
+// map of last interim DOM element per sender id
+const lastInterimEl = {};
 
 // UI elements
 const joinBtn = document.getElementById("joinBtn");
@@ -205,6 +209,8 @@ joinBtn.onclick = async () => {
       myId = data.id;
       // peers list contains existing peer ids (we'll wait for their offers)
       console.log("Assigned id", myId, "existing peers:", data.peers);
+      // fetch conversation history for this room
+      try { fetchMessages(); } catch (e) {}
       return;
     }
 
@@ -267,6 +273,16 @@ joinBtn.onclick = async () => {
       });
       return;
     }
+    // real-time transcript/chat from peers
+    if (data.type === 'transcript' || data.type === 'chat') {
+      const from = data.from;
+      const payload = data.payload || {};
+      const text = payload.text || (typeof payload === 'string' ? payload : '');
+      const final = !!payload.final;
+      // append incoming message (dedup handled inside)
+      appendChatMessage({ from, text, final, type: data.type });
+      return;
+    }
   };
 
   ws.onclose = () => {
@@ -282,3 +298,148 @@ joinBtn.onclick = async () => {
     console.error("WebSocket error:", err);
   };
 };
+
+// --- Chat / Dictation UI ---
+const chatList = document.getElementById('chatList');
+const dictateBtn = document.getElementById('dictateBtn');
+const chatInput = document.getElementById('chatInput');
+const sendChat = document.getElementById('sendChat');
+
+function appendChatMessage({ from, text, final, type }) {
+  if (!chatList) return;
+  // dedupe by from+text for final messages
+  const key = `${from}|${text}`;
+  if (final) {
+    if (recentMsgSet.has(key)) return; // already have this exact final message
+    recentMsgSet.add(key);
+    // if there is an interim element for this sender, replace it
+    const interimEl = lastInterimEl[from];
+    if (interimEl) {
+      interimEl.classList.remove('interim');
+      interimEl.classList.add('final');
+      const txt = interimEl.querySelector('.chat-text');
+      if (txt) txt.textContent = text;
+      delete lastInterimEl[from];
+      chatList.scrollTop = chatList.scrollHeight;
+      return;
+    }
+  } else {
+    // interim: update existing interim element or create one
+    if (lastInterimEl[from]) {
+      const el0 = lastInterimEl[from];
+      const txt0 = el0.querySelector('.chat-text');
+      if (txt0) txt0.textContent = text;
+      chatList.scrollTop = chatList.scrollHeight;
+      return;
+    }
+  }
+
+  const el = document.createElement('div');
+  el.className = 'chat-item' + (final ? ' final' : ' interim');
+  const who = document.createElement('div');
+  who.className = 'chat-who';
+  who.textContent = from === myId ? 'You' : `Peer ${from}`;
+  const txt = document.createElement('div');
+  txt.className = 'chat-text';
+  txt.textContent = text;
+  el.appendChild(who);
+  el.appendChild(txt);
+  chatList.appendChild(el);
+  if (!final) lastInterimEl[from] = el;
+  chatList.scrollTop = chatList.scrollHeight;
+}
+
+// Fetch existing messages for the room
+async function fetchMessages() {
+  if (!room) return;
+  try {
+    const res = await fetch(`/messages?room=${encodeURIComponent(room)}`);
+    const json = await res.json();
+    if (!json.success) return;
+    if (!chatList) return;
+    // reset
+    chatList.innerHTML = '';
+    recentMsgSet.clear();
+    Object.keys(lastInterimEl).forEach(k=>delete lastInterimEl[k]);
+    json.messages.forEach((m) => {
+      // treat persisted messages as final
+      appendChatMessage({ from: m.from, text: m.text, final: true, type: m.type });
+    });
+  } catch (e) {
+    console.warn('Failed to fetch messages', e);
+  }
+}
+
+// wire fetchMessages after join
+const origOnId = null;
+// call fetchMessages when assigned id (i.e., after join completes)
+const _origWsOnMessage = null;
+
+// expose simple chat send
+if (sendChat) sendChat.onclick = () => {
+  const text = chatInput.value && chatInput.value.trim();
+  if (!text || !ws || ws.readyState !== WebSocket.OPEN) return;
+  const msg = { type: 'chat', payload: { text }, room };
+  ws.send(JSON.stringify(msg));
+  appendChatMessage({ from: myId, text, final: true, type: 'chat' });
+  chatInput.value = '';
+};
+
+// Dictation via Web Speech API
+let recognition = null;
+let dictating = false;
+if (dictateBtn) {
+  dictateBtn.onclick = async () => {
+    if (!('webkitSpeechRecognition' in window) && !('SpeechRecognition' in window)) {
+      alert('SpeechRecognition API not supported in this browser.');
+      return;
+    }
+    if (!recognition) {
+      const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+      recognition = new SR();
+      recognition.continuous = true;
+      recognition.interimResults = true;
+      recognition.lang = 'en-US';
+      recognition.onresult = (ev) => {
+        let interim = '';
+        for (let i = ev.resultIndex; i < ev.results.length; ++i) {
+          const result = ev.results[i];
+          const text = result[0].transcript;
+          if (result.isFinal) {
+            // split final result into sentences and send each sentence separately
+            const sentences = text.match(/[^.!?\n]+[.!?\n]?/g) || [text];
+            for (let s of sentences) {
+              s = s.trim();
+              if (!s) continue;
+              // send final sentence
+              if (ws && ws.readyState === WebSocket.OPEN) {
+                ws.send(JSON.stringify({ type: 'transcript', payload: { text: s, final: true }, room }));
+              }
+              appendChatMessage({ from: myId, text: s, final: true, type: 'transcript' });
+            }
+          } else {
+            interim += text;
+          }
+        }
+        if (interim) {
+          // show interim transcript locally (do not send interim to server)
+          appendChatMessage({ from: myId, text: interim, final: false, type: 'transcript' });
+        }
+      };
+      recognition.onerror = (e) => console.warn('SpeechRecognition error', e);
+    }
+    if (!dictating) {
+      recognition.start();
+      dictating = true;
+      dictateBtn.textContent = 'Stop Dictation';
+    } else {
+      recognition.stop();
+      dictating = false;
+      dictateBtn.textContent = 'Start Dictation';
+    }
+  };
+}
+
+// call fetchMessages when we know the room (after join id message)
+const originalOnMessage = ws ? ws.onmessage : null;
+// We can't hook into the closure easily here; instead, call fetchMessages from id handler above.

@@ -7,6 +7,16 @@ const path = require("path");
 
 const app = express();
 
+// ensure storage directory exists for uploads
+const storageDir = path.join(__dirname, "storage");
+if (!fs.existsSync(storageDir)) {
+  fs.mkdirSync(storageDir, { recursive: true });
+}
+
+// multipart file upload handling
+const multer = require("multer");
+const upload = multer({ dest: storageDir });
+
 // Prefer HTTPS if cert files exist (created in `cert/` by user).
 let server;
 let usingHttps = false;
@@ -32,6 +42,13 @@ const wss = new WebSocket.Server({ server });
 
 // serve static files (frontend)
 app.use(express.static(path.join(__dirname, "public")));
+
+// upload endpoint: accepts a single file field named "file"
+app.post("/upload", upload.single("file"), (req, res) => {
+  if (!req.file) return res.status(400).json({ success: false, error: "no file" });
+  // return filename and original name
+  res.json({ success: true, filename: req.file.filename, originalname: req.file.originalname });
+});
 
 let rooms = {}; // { roomId: Set<ws> }
 

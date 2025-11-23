@@ -546,3 +546,41 @@ if (dictateBtn) {
 // call fetchMessages when we know the room (after join id message)
 const originalOnMessage = ws ? ws.onmessage : null;
 // We can't hook into the closure easily here; instead, call fetchMessages from id handler above.
+
+async function loadFiles() {
+  if (!window.currentRoom) return;
+
+  const res = await fetch(`/files?room=${encodeURIComponent(window.currentRoom)}`);
+  const data = await res.json();
+
+  const list = document.getElementById("fileList");
+  const fileCount = document.getElementById("fileCount");
+  list.innerHTML = "";
+
+  data.files.forEach(f => {
+    const li = document.createElement("li");
+    li.innerHTML = `
+      <a href="/file/${f.filename}" target="_blank">${f.originalname}</a>
+    `;
+    list.appendChild(li);
+  });
+
+  fileCount.textContent = `(${data.files.length})`;
+}
+
+document.getElementById("refreshFiles").onclick = loadFiles;
+
+async function uploadFile(file) {
+  const form = new FormData();
+  form.append("file", file);
+  form.append("room", window.currentRoom);
+
+  await fetch("/upload", {
+    method: "POST",
+    body: form
+  });
+}
+
+if (msg.type === "file-upload") {
+  loadFiles();
+}

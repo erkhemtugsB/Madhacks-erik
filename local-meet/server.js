@@ -15,7 +15,7 @@ let model = null;
 try {
   if (process.env.GEMINI_APIKEY) {
     const genAI = new GoogleGenerativeAI(process.env.GEMINI_APIKEY);
-    model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
+    model = genAI.getGenerativeModel({ model: "gemini-2.0-flash" });
     console.log("Gemini model ready");
   } else {
     console.warn("GEMINI_APIKEY not set; paraphrase/summarize will fallback");
@@ -33,6 +33,87 @@ if (!fs.existsSync(storageDir)) {
 // multipart file upload handling
 const multer = require("multer");
 const upload = multer({ dest: storageDir });
+
+let roomFiles = {}; // { roomId: [ { filename, originalname, room, uploadedAt } ] }
+let allUploads = []; // [ { filename, originalname, room, uploadedAt } ]
+
+
+app.post("/upload", upload.single("file"), (req, res) => {
+  if (!req.file) return res.status(400).json({ success: false, error: "no file" });
+
+  const roomId = req.body.room ? String(req.body.room).trim() : "";
+  const recordedFile = {
+    filename: req.file.filename,
+    originalname: req.file.originalname,
+    room: roomId || null,
+    uploadedAt: Date.now()
+  };
+
+  if (roomId) {
+    // Track file under this room
+    roomFiles[roomId] = roomFiles[roomId] || [];
+    roomFiles[roomId].push(recordedFile);
+
+    // Broadcast to all users in that room
+    if (rooms[roomId]) {
+      rooms[roomId].forEach((peer) => {
+        peer.send(JSON.stringify({
+          type: "file-upload",
+          file: {
+            filename: req.file.filename,
+            originalname: req.file.originalname,
+            uploadedAt: recordedFile.uploadedAt
+          }
+        }));
+      });
+    }
+  }
+
+  allUploads.push(recordedFile);
+
+  res.json({
+    success: true,
+    filename: req.file.filename,
+    originalname: req.file.originalname,
+    room: recordedFile.room,
+    uploadedAt: recordedFile.uploadedAt
+  });
+});
+
+//fetch files (optionally filter by room)
+app.get("/files", (req, res) => {
+  const roomId = req.query.room ? String(req.query.room).trim() : "";
+
+  if (roomId) {
+    return res.json({
+      success: true,
+      files: (roomFiles[roomId] || []).map((file) => ({
+        filename: file.filename,
+        originalname: file.originalname,
+        room: roomId,
+        uploadedAt: file.uploadedAt || null
+      }))
+    });
+  }
+
+  res.json({
+    success: true,
+    files: allUploads.map((file) => ({
+      filename: file.filename,
+      originalname: file.originalname,
+      room: file.room,
+      uploadedAt: file.uploadedAt
+    }))
+  });
+});
+
+app.get("/file/:name", (req, res) => {
+  const filePath = path.join(storageDir, req.params.name);
+  if (fs.existsSync(filePath)) return res.sendFile(filePath);
+  res.status(404).end();
+});
+
+
 // Separate upload handler for paraphrase route (keep original upload unaffected)
 
 // Prefer HTTPS if cert files exist (created in `cert/` by user).
@@ -69,13 +150,6 @@ app.get('/logo.png', (req, res) => {
   } else {
     res.status(404).end();
   }
-});
-
-// upload endpoint: accepts a single file field named "file"
-app.post("/upload", upload.single("file"), (req, res) => {
-  if (!req.file) return res.status(400).json({ success: false, error: "no file" });
-  // return filename and original name
-  res.json({ success: true, filename: req.file.filename, originalname: req.file.originalname });
 });
 
 let rooms = {}; // { roomId: Set<ws> }

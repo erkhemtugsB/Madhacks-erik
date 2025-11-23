@@ -34,7 +34,6 @@ if (!fs.existsSync(storageDir)) {
 const multer = require("multer");
 const upload = multer({ dest: storageDir });
 // Separate upload handler for paraphrase route (keep original upload unaffected)
-const paraphraseUpload = multer({ dest: 'uploads/' });
 
 // Prefer HTTPS if cert files exist (created in `cert/` by user).
 let server;
@@ -164,28 +163,6 @@ app.get('/messages', (req, res) => {
   if (!roomQ) return res.status(400).json({ success: false, error: 'room required' });
   res.json({ success: true, messages: messages[roomQ] || [] });
 });
-
-// Upload & paraphrase route using Gemini
-// app.post('/paraphrase', paraphraseUpload.single('file'), async (req, res) => {
-//   if (!req.file) return res.status(400).send('No file uploaded.');
-//   const originalText = fs.readFileSync(req.file.path, 'utf-8');
-//   let paraphrased = originalText;
-//   if (model) {
-//     try {
-//       const prompt = `Paraphrase and fix the grammar of the text. Keep meaning the same. Keep it direct, simple 1 sentence without any additional words.\n\nText: ${originalText}`;
-//       const result = await model.generateContent(prompt);
-//       paraphrased = await result.response.text();
-//     } catch (e) {
-//       console.warn('Gemini paraphrase failed, returning original text', e.message || e);
-//     }
-//   }
-//   const outputPath = `output-${Date.now()}.txt`;
-//   fs.writeFileSync(outputPath, paraphrased);
-//   res.download(outputPath, 'paraphrased.txt', () => {
-//     try { fs.unlinkSync(req.file.path); } catch {}
-//     try { fs.unlinkSync(outputPath); } catch {}
-//   });
-// });
 
 // Summarize chat history (client sends full text)
 app.post('/summarize', async (req, res) => {

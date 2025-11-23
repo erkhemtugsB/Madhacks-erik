@@ -368,6 +368,7 @@ const chatList = document.getElementById('chatList');
 const dictateBtn = document.getElementById('dictateBtn');
 const chatInput = document.getElementById('chatInput');
 const sendChat = document.getElementById('sendChat');
+const summarizeBtn = document.getElementById('summarizeBtn');
 
 function appendChatMessage({ from, text, final, type }) {
   if (!chatList) return;
@@ -447,6 +448,44 @@ if (sendChat) sendChat.onclick = () => {
   ws.send(JSON.stringify(msg));
   appendChatMessage({ from: myId, text, final: true, type: 'chat' });
   chatInput.value = '';
+};
+
+// Summarize current chat history using /summarize endpoint
+if (summarizeBtn) summarizeBtn.onclick = async () => {
+  try {
+    // Collect all chat text nodes
+    const items = Array.from(document.querySelectorAll('#chatList .chat-item .chat-text'));
+    const lines = items.map(el => el.textContent.trim()).filter(Boolean);
+    if (lines.length === 0) {
+      alert('No chat history to summarize yet.');
+      return;
+    }
+    const text = lines.join('\n');
+    const res = await fetch('/summarize', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ text })
+    });
+    const json = await res.json();
+    if (!json.success) {
+      alert('Summarize failed: ' + (json.error || 'unknown'));
+      return;
+    }
+    const summary = json.summary || '';
+    // Download summary as a text file
+    const blob = new Blob([summary + '\n'], { type: 'text/plain' });
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = 'summary.txt';
+    document.body.appendChild(a);
+    a.click();
+    setTimeout(() => {
+      URL.revokeObjectURL(a.href);
+      a.remove();
+    }, 200);
+  } catch (e) {
+    alert('Error summarizing: ' + e.message);
+  }
 };
 
 // Dictation via Web Speech API

@@ -35,3 +35,4 @@ build/
 
 ### Spring Boot ###
 credentials.json
+application.properties

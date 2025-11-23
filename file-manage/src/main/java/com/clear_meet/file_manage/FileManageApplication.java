@@ -8,9 +8,16 @@ import org.springframework.boot.CommandLineRunner;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.context.annotation.Bean;
+import org.springframework.core.io.ByteArrayResource;
+import org.springframework.http.*;
+import org.springframework.util.LinkedMultiValueMap;
+import org.springframework.util.MultiValueMap;
+import org.springframework.util.StreamUtils;
+import org.springframework.web.client.RestTemplate;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.ByteArrayInputStream;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.Collections;
@@ -28,10 +35,85 @@ public class FileManageApplication {
 	@Bean
 	public CommandLineRunner testMyService(GoogleDriveService myService) {
 		return args -> {
-			testLifeCycle(myService);
+			testControllerCycle();
 		};
 	}
 
+	public void testControllerCycle() {
+		RestTemplate restTemplate = new RestTemplate();
+		String baseUrl = "http://localhost:8080/api/files";
+
+		System.out.println("--- STARTING API TEST ---");
+
+		// ==========================================
+		// 1. TEST UPLOAD
+		// ==========================================
+		System.out.println("1. Testing Upload...");
+
+		// Create a dummy file in memory
+		String fileContent = "This is a test content from CommandLineRunner.";
+		ByteArrayResource resource = new ByteArrayResource(fileContent.getBytes()) {
+			@Override
+			public String getFilename() {
+				// Required: MultipartFile needs a filename to work!
+				return "runner_test.txt";
+			}
+		};
+
+		// Build HTTP Request
+		HttpHeaders headers = new HttpHeaders();
+		headers.setContentType(MediaType.MULTIPART_FORM_DATA);
+
+		MultiValueMap<String, Object> body = new LinkedMultiValueMap<>();
+		body.add("file", resource);
+
+		HttpEntity<MultiValueMap<String, Object>> requestEntity = new HttpEntity<>(body, headers);
+
+		// Execute Post
+		ResponseEntity<String> response = restTemplate.postForEntity(
+				baseUrl + "/upload",
+				requestEntity,
+				String.class
+		);
+
+		// Parse File ID
+		String responseBody = response.getBody();
+		String fileId = responseBody.replace("File ID: ", "");
+		System.out.println("   [SUCCESS] Uploaded. Got ID: " + fileId);
+
+
+		// ==========================================
+		// 2. TEST DOWNLOAD
+		// ==========================================
+		System.out.println("2. Testing Download...");
+
+		java.io.File downloadDest = new java.io.File("downloaded_runner_test.txt");
+
+		// We use 'execute' to handle the stream response directly
+		restTemplate.execute(
+				baseUrl + "/download/" + fileId,
+				HttpMethod.GET,
+				null,
+				clientResponse -> {
+					StreamUtils.copy(clientResponse.getBody(), new FileOutputStream(downloadDest));
+					return downloadDest;
+				}
+		);
+
+		System.out.println("   [SUCCESS] File downloaded to: " + downloadDest.getAbsolutePath());
+
+
+		// ==========================================
+		// 3. TEST DELETE
+		// ==========================================
+		System.out.println("3. Testing Delete...");
+
+		restTemplate.delete(baseUrl + "/delete/" + fileId);
+
+		System.out.println("   [SUCCESS] File deleted.");
+		System.out.println("--- TEST COMPLETED ---");
+	};
+/*
 	public void testLifeCycle(GoogleDriveService driveService) throws IOException, InterruptedException {
 		System.out.println("--- STARTING UPLOAD & DELETE TEST ---");
 		// 1. Create your test content
@@ -63,7 +145,7 @@ public class FileManageApplication {
 
 		System.out.println("SUCCESS: File moved to trash.");
 		System.out.println("--- TEST FINISHED ---");*/
-	}
+/*	}
 
 	// A simple helper class to mimic a file upload in memory
 	public static class InMemoryMultipartFile implements MultipartFile {
@@ -102,5 +184,6 @@ public class FileManageApplication {
 		// We can leave these unimplemented for this specific test
 		@Override public void transferTo(java.io.File dest) throws IOException, IllegalStateException {}
 	}
+	*/
 }
 

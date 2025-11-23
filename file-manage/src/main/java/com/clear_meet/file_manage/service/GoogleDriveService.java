@@ -6,9 +6,10 @@ import com.google.api.services.drive.model.File;
 import com.google.api.services.drive.model.FileList;
 import com.google.api.services.drive.model.Permission;
 import com.google.api.services.drive.model.PermissionList;
+import jakarta.servlet.ServletOutputStream;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.stereotype.Component;
+import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.ByteArrayInputStream;
@@ -18,8 +19,8 @@ import java.util.Collections;
 import java.util.List;
 
 /* class to interact with Google Drive API */
-@Component
-public class GoogleDriveService {
+@Service
+public class GoogleDriveService implements FileManagerService {
     @Autowired
     private Drive driveClient;
 
@@ -51,6 +52,33 @@ public class GoogleDriveService {
         }
         fileMetaData.setName(fileOriginalName);
         return fileMetaData;
+    }
+
+    public void deleteFile(String fileId) throws RuntimeException {
+        try {
+            driveClient.files().delete(fileId)
+                    .setSupportsAllDrives(true)
+                    .execute();
+            //System.out.println("Deleted: " + f.getName());
+
+        } catch (com.google.api.client.googleapis.json.GoogleJsonResponseException e) {
+            if (e.getStatusCode() == 404) {
+                System.out.println("File not found: " + fileId);
+                return;
+            } else {
+                // If it's a different error (like 403), we want to know about it
+                System.err.println("Error deleting " + fileId + ": " + e.getMessage());
+                return;
+            }
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    @Override
+    public void downloadFile(String fileId, ServletOutputStream outputStream) throws IOException {
+        driveClient.files().get(fileId)
+                .executeMediaAndDownloadTo(outputStream);
     }
 
     public String deleteAllFiles() throws IOException {

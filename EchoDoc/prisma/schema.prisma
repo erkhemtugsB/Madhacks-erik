@@ -1,0 +1,23 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model Note {
+  id        Int      @id @default(autoincrement())
+  content   String
+  pageNumber Int?
+  createdAt DateTime @default(now())
+}
+
+model TranscriptSegment {
+  id        Int      @id @default(autoincrement())
+  content   String
+  speaker   String
+  timestamp Float
+  createdAt DateTime @default(now())
+}

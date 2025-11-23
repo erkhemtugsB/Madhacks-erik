@@ -1,16 +1,25 @@
 # ----------------------
-# Node.js & Dependencies
+# Logs
 # ----------------------
-node_modules/
+logs
+*.log
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 pnpm-debug.log*
 lerna-debug.log*
-.pnpm-store
+# Java crash logs
+hs_err_pid*
 
 # ----------------------
-# Environment Variables (IMPORTANT)
+# Node.js & Dependencies
+# ----------------------
+node_modules/
+.pnpm-store
+.npmrc
+
+# ----------------------
+# Environment Variables & Secrets (IMPORTANT)
 # ----------------------
 # Never commit your secrets!
 .env
@@ -20,20 +29,58 @@ lerna-debug.log*
 .env.production.local
 *.env
 *.env.*
+*.local
+
+# Spring Boot & Cloud Secrets
+application.properties
+application.yml
+application.yaml
+credential.json
+credentials.json
+gcp-credentials.json
 
 # ----------------------
-# Build Outputs (Vite & Express)
+# Java & Spring Boot
+# ----------------------
+target/
+.gradle/
+bin/
+*.class
+*.jar
+*.war
+*.ear
+# Exception: Keep the Maven wrapper so others can build easily
+!/.mvn/wrapper/maven-wrapper.jar
+
+# ----------------------
+# Eclipse / IntelliJ / NetBeans
+# ----------------------
+.classpath
+.project
+.settings/
+.sts4-cache
+.idea
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.iml
+
+# ----------------------
+# Build Outputs & Generated Files
 # ----------------------
 dist/
 dist-ssr/
 build/
 out/
 coverage/
+/src/generated/prisma
 
 # ----------------------
 # IDE - VS Code
 # ----------------------
 .vscode/*
+# Allow shared config files (Recommended for teams)
 !.vscode/extensions.json
 !.vscode/launch.json
 !.vscode/settings.json
@@ -58,9 +105,5 @@ Desktop.ini
 *~
 *.swp
 *.swo
+*.sw?
 .lock-wscript
-
-# ----------------------
-# Misc
-# ----------------------
-.npmrc
